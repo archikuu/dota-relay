@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111512" />
+    <meta
+      name="description"
+      content="Pindahkan hotkey, opsi permainan, dan hero grid Dota 2 antar-akun Steam di perangkatmu."
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Dota Relay — Transfer pengaturan</title>
+    <link rel="icon" href="./mark.svg" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <a class="brand" href="./"
+          ><img src="./mark.svg" width="33" height="33" alt="" />DOTA
+          <b>RELAY</b></a
+        ><button class="help" id="help">
+          <span aria-hidden="true">?</span> Panduan
+        </button>
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <div class="copy">
+          <div class="eyebrow"><i></i> UTILITAS DOTA 2</div>
+          <h1>Transfer<br />pengaturan<span>.</span></h1>
+          <p>
+            Bawa hotkey, opsi permainan, dan susunan hero ke akun Steam lainnya.
+          </p>
+        </div>
+        <div class="map" aria-hidden="true">
+          <canvas id="map"></canvas><span class="dire">DIRE</span
+          ><span class="radiant">RADIANT</span>
+        </div>
+      </section>
+      <section class="workspace" aria-label="Transfer pengaturan">
+        <div class="steps">
+          <span data-step="0">01 <b>Folder Steam</b></span
+          ><i></i><span data-step="1">02 <b>Pilih akun</b></span
+          ><i></i><span data-step="2">03 <b>Transfer</b></span>
+        </div>
+        <div class="panel" id="panel"></div>
+      </section>
+      <p id="status" role="status" aria-live="polite"></p>
+      <footer>
+        <span class="localdot"></span> File diproses secara lokal di
+        perangkatmu.
+        <a
+          href="https://github.com/archikuu/dota-relay#lisensi-dan-kredit"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Kode sumber &amp; kredit ↗</a
+        >
+      </footer>
+    </main>
+    <dialog id="guide">
+      <div class="dialoghead">
+        <h2>Panduan transfer</h2>
+        <button id="close" aria-label="Tutup panduan">×</button>
+      </div>
+      <ol>
+        <li>
+          Buka Dota 2 sekali di kedua akun di PC ini. Keluar dari game, tunggu
+          Steam Cloud selesai sinkron, lalu tutup Steam.
+        </li>
+        <li>
+          Pilih folder instalasi Steam, atau langsung pilih subfolder
+          <code>userdata</code>. Di Windows, lokasi umumnya
+          <code>C:\Program Files (x86)\Steam</code>. Kamu bisa menempelkan
+          alamat folder di dialog pemilih.
+        </li>
+        <li>
+          Pilih akun asal, akun tujuan, serta pengaturan. Periksa ringkasan
+          sebelum menyalin.
+        </li>
+        <li>
+          Buka Dota 2 di akun tujuan dan cek hasilnya. Jika Steam Cloud
+          menampilkan konflik, pilih file lokal yang baru disalin.
+        </li>
+      </ol>
+      <p>
+        Gunakan Chrome atau Edge desktop. Jika pemilih diblokir di pratinjau,
+        buka alamat situs langsung di tab browser.
+      </p>
+    </dialog>
+    <script type="module" src="./app.js"></script>
+    <script src="./map.js" defer></script>
+  </body>
+</html>
