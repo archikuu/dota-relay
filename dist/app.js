@@ -49,7 +49,7 @@ function notice(error) {
     error.name === "NotAllowedError" || error.name === "SecurityError"
       ? "Akses folder belum diberikan. Buka situs langsung di Chrome atau Edge desktop dan izinkan akses ke folder Steam."
       : error.name === "AbortError"
-        ? "Pemilihan folder dibatalkan."
+        ? "Folder belum dipilih. Jika jendela pemilih tidak muncul, buka situs ini langsung di Chrome atau Edge desktop, atau seret folder userdata Steam ke panel."
         : error.message;
 }
 function connect() {
@@ -58,11 +58,51 @@ function connect() {
     window.isSecureContext && typeof window.showDirectoryPicker === "function";
   panel.innerHTML =
     '<div class="connect"><div class="foldericon" aria-hidden="true"><i></i></div><div><h2>Hubungkan folder Steam</h2><p>Pilih folder Steam untuk melihat akun Dota 2 di PC ini.</p></div><button class="primary" id="pick">Pilih folder Steam ↗</button></div><div class="actions" id="resume"></div><details class="hint"><summary>Di mana folder Steam saya?</summary><p>Pilih folder instalasi Steam atau subfolder <code>userdata</code>. Lokasi umum Windows adalah <code>C:\\Program Files (x86)\\Steam</code>. Tempel alamatnya di dialog pemilih folder.</p></details>';
-  byId("pick").disabled = !supported;
-  byId("pick").onclick = () => openFolder(false);
-  if (!supported)
-    status.textContent =
-      "Gunakan Chrome atau Edge desktop dan buka situs melalui HTTPS atau localhost.";
+  const externalHelp =
+    "Buka alamat ini di Chrome atau Edge desktop untuk memilih folder Steam.";
+  const dropSupported =
+    window.isSecureContext &&
+    typeof window.DataTransferItem?.prototype.getAsFileSystemHandle ===
+      "function";
+  const instructions = panel.querySelector(".connect p");
+  instructions.textContent = dropSupported
+    ? "Pilih folder Steam, atau seret folder userdata ke panel ini."
+    : "Pilih folder Steam untuk melihat akun Dota 2 di PC ini.";
+  const recovery = document.createElement("div");
+  recovery.className = "hint";
+  recovery.hidden = true;
+  const address = document.createElement("input");
+  address.readOnly = true;
+  address.value = location.origin + location.pathname;
+  address.setAttribute("aria-label", "Alamat situs");
+  address.onclick = () => address.select();
+  recovery.append(externalHelp, " ", address);
+  byId("resume").after(recovery);
+  panel.ondragover = (event) => {
+    if (!dropSupported || !event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+  panel.ondrop = (event) => {
+    event.preventDefault();
+    if (!dropSupported || busy) return;
+    const item = [...event.dataTransfer.items].find(
+      (item) => item.kind === "file",
+    );
+    if (item) openFolder(false, item.getAsFileSystemHandle());
+  };
+  if (!supported) {
+    byId("pick").textContent = "Cara membuka di browser";
+    recovery.hidden = false;
+  }
+  byId("pick").onclick = () => {
+    if (supported) openFolder(false);
+    else {
+      recovery.hidden = false;
+      address.focus();
+      address.select();
+    }
+  };
   if (supported && remembered) {
     const btn = document.createElement("button");
     btn.className = "secondary";
@@ -71,13 +111,21 @@ function connect() {
     byId("resume").append(btn);
   }
 }
-async function openFolder(reuse) {
+async function openFolder(reuse, dropped) {
   if (busy) return;
   busy = true;
   try {
-    const handle = reuse
-      ? remembered
-      : await window.showDirectoryPicker({ id: "dota-relay", mode: "read" });
+    status.textContent =
+      dropped || reuse ? "Menghubungkan folder…" : "Menunggu pemilihan folder…";
+    const recovery = panel.querySelector(".hint:has(input[readonly])");
+    if (recovery) recovery.hidden = false;
+    const handle = dropped
+      ? await dropped
+      : reuse
+        ? remembered
+        : await window.showDirectoryPicker({ id: "dota-relay", mode: "read" });
+    if (handle?.kind !== "directory")
+      throw new Error("Seret folder Steam atau userdata ke panel.");
     if (
       reuse &&
       (await handle.requestPermission({ mode: "read" })) !== "granted"
@@ -88,7 +136,7 @@ async function openFolder(reuse) {
     folder = result.data;
     accounts = result.accounts;
     remembered = handle;
-    await memory("put", handle);
+    void memory("put", handle);
     source = target = null;
     choices.clear();
     if (accounts.length < 2) {
@@ -112,6 +160,7 @@ function selectedPaths() {
   );
 }
 function selectAccounts() {
+  panel.ondragover = panel.ondrop = null;
   step(1);
   panel.innerHTML =
     '<h2>Pilih akun dan pengaturan</h2><p id="found"></p><div class="selects"><label>Akun asal<select id="source"></select></label><label>Akun tujuan<select id="target"></select></label></div><fieldset><legend>Pengaturan yang disalin</legend><div id="groups"></div></fieldset><div class="actions"><button class="primary" id="review">Tinjau transfer →</button><button class="secondary" id="folder">Ganti folder</button></div>';
@@ -225,5 +274,10 @@ async function transfer() {
     busy = false;
   }
 }
-remembered = await memory("get");
 connect();
+memory("get").then((handle) => {
+  if (handle && !remembered && !busy && byId("pick") && !status.textContent) {
+    remembered = handle;
+    connect();
+  }
+});
